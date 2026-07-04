@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ETV Go</string>
+    <string name="search">Search channels...</string>
+    <string name="favorites">Favorites</string>
+    <string name="all_channels">All Channels</string>
+    <string name="settings">Settings</string>
+    <string name="add_playlist">Add Playlist</string>
+    <string name="m3u_url">M3U URL</string>
+    <string name="xtream_codes">Xtream Codes</string>
+    <string name="upload_file">Upload File</string>
+    <string name="no_channels">No channels found</string>
+    <string name="no_epg">No EPG available</string>
+    <string name="now_playing">Now Playing</string>
+    <string name="categories">Categories</string>
+    <string name="fullscreen">Fullscreen</string>
+    <string name="exit_fullscreen">Exit Fullscreen</string>
+    <string name="channel_up">Channel Up</string>
+    <string name="channel_down">Channel Down</string>
+    <string name="add_favorite">Add to Favorites</string>
+    <string name="remove_favorite">Remove from Favorites</string>
+</resources>

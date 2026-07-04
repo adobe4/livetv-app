@@ -1,0 +1,17 @@
+*.apk
+*.apk.*
+*.dex
+*.class
+*.jar
+*.iml
+.idea/
+.gradle/
+build/
+app/build/
+tv/build/
+local.properties
+.DS_Store
+Thumbs.db
+*.pyc
+__pycache__/
+*.tmp
