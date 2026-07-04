@@ -37,7 +37,7 @@ class IPTVRepository {
     val favoriteVodIds: StateFlow<Set<String>> = _favoriteVodIds.asStateFlow()
 
     init {
-        loadSampleData()
+        // No sample data - user must add their own playlist
     }
 
     fun addPlaylist(source: PlaylistSource) {
@@ -47,7 +47,8 @@ class IPTVRepository {
         if (_activePlaylistId.value.isEmpty()) {
             _activePlaylistId.value = source.id
         }
-        // Load sample channels for demo (in real app, would fetch from URL)
+        // In real app, would fetch and parse playlist URL here
+        // For now, load sample data for demo
         loadSampleChannels()
         loadSampleEPG()
         loadSampleVOD()
@@ -173,15 +174,7 @@ class IPTVRepository {
     }
 
     private fun loadSampleData() {
-        val samplePlaylist = PlaylistSource(
-            id = "sample_1",
-            name = "Sample IPTV",
-            type = PlaylistType.M3U_URL,
-            url = "https://sample-iptv.com/playlist.m3u",
-            isActive = true
-        )
-        _playlists.value = listOf(samplePlaylist)
-        _activePlaylistId.value = samplePlaylist.id
+        // Only called explicitly when user chooses demo
         loadSampleChannels()
         loadSampleEPG()
         loadSampleVOD()
@@ -203,6 +196,19 @@ class IPTVRepository {
                 isSelected = index == 0
             )
         }
+    }
+
+    fun loadDemoData() {
+        loadSampleData()
+        val demoPlaylist = PlaylistSource(
+            id = "demo_1",
+            name = "Demo IPTV",
+            type = PlaylistType.M3U_URL,
+            url = "https://demo-iptv.com/playlist.m3u",
+            isActive = true
+        )
+        _playlists.value = listOf(demoPlaylist)
+        _activePlaylistId.value = demoPlaylist.id
     }
 
     private fun loadSampleChannels() {

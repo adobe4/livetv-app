@@ -15,15 +15,28 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.viniptv.ui.screens.MainTab
 import com.viniptv.ui.theme.VinColors
 
+data class NavTabInfo(
+    val id: String,
+    val icon: ImageVector,
+    val label: String
+)
+
 @Composable
-fun BottomNavBar(
-    currentTab: MainTab,
-    onTabSelected: (MainTab) -> Unit,
+fun NavBarRow(
+    selectedId: String,
+    onTabSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val tabs = listOf(
+        NavTabInfo("home", Icons.Filled.Home, "Home"),
+        NavTabInfo("live", Icons.Filled.LiveTv, "Live"),
+        NavTabInfo("vod", Icons.Filled.Movie, "VOD"),
+        NavTabInfo("epg", Icons.Filled.ListAlt, "EPG"),
+        NavTabInfo("settings", Icons.Filled.Settings, "Settings")
+    )
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = VinColors.Surface,
@@ -36,49 +49,28 @@ fun BottomNavBar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavTab(
-                icon = Icons.Filled.LiveTv,
-                label = "Live TV",
-                tab = MainTab.LIVE_TV,
-                isSelected = currentTab == MainTab.LIVE_TV,
-                onClick = { onTabSelected(MainTab.LIVE_TV) }
-            )
-            NavTab(
-                icon = Icons.Filled.Movie,
-                label = "VOD",
-                tab = MainTab.VOD,
-                isSelected = currentTab == MainTab.VOD,
-                onClick = { onTabSelected(MainTab.VOD) }
-            )
-            NavTab(
-                icon = Icons.Filled.ListAlt,
-                label = "EPG",
-                tab = MainTab.EPG,
-                isSelected = currentTab == MainTab.EPG,
-                onClick = { onTabSelected(MainTab.EPG) }
-            )
-            NavTab(
-                icon = Icons.Filled.Settings,
-                label = "Settings",
-                tab = MainTab.SETTINGS,
-                isSelected = currentTab == MainTab.SETTINGS,
-                onClick = { onTabSelected(MainTab.SETTINGS) }
-            )
+            tabs.forEach { tab ->
+                NavTabItem(
+                    icon = tab.icon,
+                    label = tab.label,
+                    isSelected = selectedId == tab.id,
+                    onClick = { onTabSelected(tab.id) }
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun NavTab(
+private fun NavTabItem(
     icon: ImageVector,
     label: String,
-    tab: MainTab,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     val bgColor by animateColorAsState(
         if (isSelected) VinColors.AccentDim else VinColors.Surface,
-        label = "navTab_$tab"
+        label = "navTab"
     )
 
     Box(
@@ -86,7 +78,7 @@ private fun NavTab(
             .clip(RoundedCornerShape(12.dp))
             .background(bgColor)
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(

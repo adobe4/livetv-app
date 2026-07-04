@@ -1,6 +1,5 @@
 package com.viniptv.ui.screens
 
-import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -8,7 +7,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,14 +27,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.viniptv.data.model.*
 import com.viniptv.player.PlayerManager
-import com.viniptv.ui.components.BottomNavBar
 import com.viniptv.ui.epg.EPGGrid
 import com.viniptv.ui.settings.MultiPlaylistScreen
 import com.viniptv.ui.settings.SettingsScreen
 import com.viniptv.ui.theme.VinColors
 import com.viniptv.ui.vod.VODScreen
 
-enum class MainTab { LIVE_TV, VOD, EPG, SETTINGS }
+// Screen states for navigation
+sealed class AppScreen {
+    object Home : AppScreen()
+    object LiveTV : AppScreen()
+    object Movies : AppScreen()
+    object Series : AppScreen()
+    object Sports : AppScreen()
+    object EPG : AppScreen()
+    object Settings : AppScreen()
+    object ManagePlaylists : AppScreen()
+    data class FullPlayer(val channel: Channel) : AppScreen()
+}
 
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
@@ -49,9 +56,7 @@ fun MainScreen(viewModel: MainViewModel) {
     val selectedCategoryIndex by viewModel.selectedCategoryIndex.collectAsState()
     val selectedChannel by viewModel.selectedChannel.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
-    val isFullScreen by viewModel.isFullScreen.collectAsState()
     val isSearchActive by viewModel.isSearchActive.collectAsState()
-    val showChannelBar by viewModel.showChannelBar.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val searchVodResults by viewModel.searchVodResults.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -60,9 +65,8 @@ fun MainScreen(viewModel: MainViewModel) {
     val vodCategories by viewModel.vodCategories.collectAsState()
     val filteredChannels by viewModel.filteredChannels.collectAsState()
 
-    var currentTab by remember { mutableStateOf(MainTab.LIVE_TV) }
+    var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.Home) }
     var showAddPlaylistDialog by remember { mutableStateOf(false) }
-    var showSettingsPlaylists by remember { mutableStateOf(false) }
     var importMode by remember { mutableStateOf(0) }
     var playlistName by remember { mutableStateOf("") }
     var m3uUrl by remember { mutableStateOf("") }
@@ -73,64 +77,80 @@ fun MainScreen(viewModel: MainViewModel) {
     // PlayerManager
     val playerManager = remember { PlayerManager(context) }
 
-    // Release player when leaving
+    // Cleanup player
     DisposableEffect(Unit) {
-        onDispose {
-            playerManager.release()
-        }
+        onDispose { playerManager.release() }
     }
 
-    // Auto-play when channel selected
+    // Auto-play when channel selected in non-fullscreen mode
     LaunchedEffect(selectedChannel) {
         selectedChannel?.let { ch ->
             playerManager.play(ch.url)
         }
     }
 
-    // Welcome screen
+    // Welcome screen - MUST add playlist, no skip
     if (!hasPlaylists) {
         WelcomeScreen(
             onAddM3uUrl = {
                 importMode = 0
+                playlistName = ""
+                m3uUrl = ""
                 showAddPlaylistDialog = true
             },
             onAddXtream = {
                 importMode = 1
+                playlistName = ""
+                xtreamServer = ""
+                xtreamUser = ""
+                xtreamPass = ""
                 showAddPlaylistDialog = true
-            },
-            onSkip = {
-                viewModel.addPlaylist("Demo IPTV", PlaylistType.M3U_URL, "https://demo.playlist.m3u")
             }
         )
         return
     }
 
-    // Full screen player
-    if (isFullScreen && selectedChannel != null) {
-        FullScreenPlayerScreen(
-            channel = selectedChannel!!,
-            isPlaying = isPlaying,
-            channels = filteredChannels,
-            favoriteChannelIds = favoriteChannelIds,
-            epgData = epgData[selectedChannel!!.epgChannelId] ?: emptyList(),
-            onPlayPause = { viewModel.togglePlayPause() },
-            onClose = { viewModel.setFullScreen(false) },
-            onChannelSelected = { viewModel.selectChannel(it) },
-            onToggleFavorite = { viewModel.toggleFavorite(it) },
-            onToggleChannelBar = { viewModel.toggleChannelBar() },
-            showChannelBar = showChannelBar
-        )
-        return
-    }
+    // Handle navigation
+    when (val screen = currentScreen) {
+        is AppScreen.FullPlayer -> {
+            FullScreenPlayerScreen(
+                channel = screen.channel,
+                isPlaying = isPlaying,
+                channels = filteredChannels,
+                favoriteChannelIds = favoriteChannelIds,
+                epgData = epgData[screen.channel.epgChannelId] ?: emptyList(),
+                onPlayPause = { viewModel.togglePlayPause() },
+                onClose = { currentScreen = AppScreen.LiveTV },
+                onChannelSelected = { viewModel.selectChannel(it); viewModel.play(it) },
+                onToggleFavorite = { viewModel.toggleFavorite(it) },
+                onToggleChannelBar = { viewModel.toggleChannelBar() },
+                showChannelBar = viewModel.showChannelBar.collectAsState().value
+            )
+            return // Exit early - full screen mode
+        }
 
-    // Main layout
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(VinColors.Background)
-    ) {
-        when (currentTab) {
-            MainTab.LIVE_TV -> {
+        is AppScreen.Sports -> {
+            // Sports redirects to Live TV with Sports category pre-selected
+            currentScreen = AppScreen.LiveTV
+        }
+        is AppScreen.Home -> {
+            HomeScreen(
+                onLiveTv = { currentScreen = AppScreen.LiveTV },
+                onVodMovies = { viewModel.setSearchActive(true); currentScreen = AppScreen.Movies },
+                onVodSeries = { viewModel.setSearchActive(true); currentScreen = AppScreen.Series },
+                onSports = {
+                    // Pre-select sports category
+                    val sportsIdx = categories.indexOfFirst { it.name.contains("Sport", ignoreCase = true) }
+                    if (sportsIdx >= 0) viewModel.selectCategory(sportsIdx)
+                    currentScreen = AppScreen.LiveTV
+                },
+                onEpg = { currentScreen = AppScreen.EPG },
+                onSettings = { currentScreen = AppScreen.Settings }
+            )
+        }
+
+        is AppScreen.LiveTV -> {
+            Box(modifier = Modifier.fillMaxSize().background(VinColors.Background)) {
                 LiveTVScreen(
                     channels = filteredChannels,
                     categories = categories.map { it.name },
@@ -144,79 +164,133 @@ fun MainScreen(viewModel: MainViewModel) {
                     onChannelSelected = { viewModel.selectChannel(it); viewModel.play(it) },
                     onToggleFavorite = { viewModel.toggleFavorite(it) },
                     onPlayPause = { viewModel.togglePlayPause() },
-                    onFullScreen = { viewModel.setFullScreen(true) },
+                    onFullScreen = {
+                        selectedChannel?.let { ch ->
+                            currentScreen = AppScreen.FullPlayer(ch)
+                        }
+                    },
                     onSearchClick = { viewModel.setSearchActive(true) }
                 )
-            }
 
-            MainTab.VOD -> {
-                VODScreen(
-                    categories = vodCategories,
-                    onMovieClick = { },
-                    onSeriesClick = { },
-                    onSearch = { viewModel.setSearchActive(true) },
-                    modifier = Modifier.padding(bottom = 64.dp)
+                // Back to home button
+                BackToHomeButton(
+                    onClick = { currentScreen = AppScreen.Home },
+                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp)
                 )
             }
+        }
 
-            MainTab.EPG -> {
+        is AppScreen.Movies -> {
+            Box(modifier = Modifier.fillMaxSize()) {
+                VODScreen(
+                    categories = vodCategories.filter { it.type == VODCategoryType.MOVIES || it.type == VODCategoryType.TRENDING || it.type == VODCategoryType.POPULAR || it.type == VODCategoryType.NEW_RELEASES || it.type == VODCategoryType.GENRE },
+                    onMovieClick = { },
+                    onSeriesClick = { },
+                    onSearch = { viewModel.setSearchActive(true) }
+                )
+                BackToHomeButton(
+                    onClick = { currentScreen = AppScreen.Home },
+                    modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
+                )
+            }
+        }
+
+        is AppScreen.Series -> {
+            Box(modifier = Modifier.fillMaxSize()) {
+                VODScreen(
+                    categories = vodCategories.filter { it.type == VODCategoryType.SERIES || it.type == VODCategoryType.TRENDING || it.type == VODCategoryType.POPULAR || it.type == VODCategoryType.NEW_RELEASES },
+                    onMovieClick = { },
+                    onSeriesClick = { },
+                    onSearch = { viewModel.setSearchActive(true) }
+                )
+                BackToHomeButton(
+                    onClick = { currentScreen = AppScreen.Home },
+                    modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
+                )
+            }
+        }
+
+        is AppScreen.EPG -> {
+            Box(modifier = Modifier.fillMaxSize()) {
                 EPGGrid(
                     channels = channels,
                     epgData = epgData,
                     currentChannelId = selectedChannel?.id,
-                    onChannelSelected = { viewModel.selectChannel(it); viewModel.play(it) },
-                    modifier = Modifier.padding(bottom = 64.dp)
+                    onChannelSelected = { viewModel.selectChannel(it); viewModel.play(it) }
+                )
+                BackToHomeButton(
+                    onClick = { currentScreen = AppScreen.Home },
+                    modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
                 )
             }
+        }
 
-            MainTab.SETTINGS -> {
-                if (showSettingsPlaylists) {
-                    MultiPlaylistScreen(
-                        playlists = playlists,
-                        activePlaylistId = "",
-                        onActivate = { viewModel.setActivePlaylist(it) },
-                        onAdd = {
-                            importMode = 0
-                            showAddPlaylistDialog = true
-                        },
-                        onEdit = { },
-                        onDelete = { viewModel.removePlaylist(it) },
-                        onBack = { showSettingsPlaylists = false },
-                        modifier = Modifier.padding(bottom = 64.dp)
-                    )
-                } else {
-                    SettingsScreen(
-                        onBack = { currentTab = MainTab.LIVE_TV },
-                        onManagePlaylists = { showSettingsPlaylists = true },
-                        onPlayerSettings = { },
-                        onParentalControl = { },
-                        onAbout = { },
-                        modifier = Modifier.padding(bottom = 64.dp)
-                    )
-                }
+        is AppScreen.Settings -> {
+            Box(modifier = Modifier.fillMaxSize()) {
+                SettingsScreen(
+                    onBack = { currentScreen = AppScreen.Home },
+                    onManagePlaylists = { currentScreen = AppScreen.ManagePlaylists },
+                    onPlayerSettings = { },
+                    onParentalControl = { },
+                    onAbout = { }
+                )
             }
         }
 
-        // Bottom navigation
-        BottomNavBar(
-            currentTab = currentTab,
-            onTabSelected = { currentTab = it },
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
-
-        // Search overlay
-        if (isSearchActive) {
-            SearchOverlay(
-                query = searchQuery,
-                onQueryChange = { viewModel.setSearchQuery(it) },
-                onClose = { viewModel.setSearchActive(false) },
-                channelResults = searchResults,
-                vodResults = searchVodResults,
-                onChannelClick = { viewModel.selectChannel(it); viewModel.play(it); viewModel.setSearchActive(false) },
-                onVodClick = { viewModel.setSearchActive(false) },
-                onToggleFavorite = { viewModel.toggleFavorite(it) }
-            )
+        is AppScreen.ManagePlaylists -> {
+            Box(modifier = Modifier.fillMaxSize()) {
+                MultiPlaylistScreen(
+                    playlists = playlists,
+                    activePlaylistId = "",
+                    onActivate = { viewModel.setActivePlaylist(it) },
+                    onAdd = {
+                        importMode = 0
+                        playlistName = ""
+                        m3uUrl = ""
+                        showAddPlaylistDialog = true
+                    },
+                    onEdit = { playlist ->
+                        // Open add dialog pre-filled with playlist info
+                        when (playlist.type) {
+                            PlaylistType.M3U_URL -> {
+                                importMode = 0
+                                m3uUrl = playlist.url
+                            }
+                            PlaylistType.XTREAM -> {
+                                importMode = 1
+                                xtreamServer = playlist.serverUrl
+                                xtreamUser = playlist.username
+                                xtreamPass = playlist.password
+                            }
+                            else -> { importMode = 0 }
+                        }
+                        playlistName = playlist.name
+                        showAddPlaylistDialog = true
+                    },
+                    onDelete = { viewModel.removePlaylist(it) },
+                    onBack = { currentScreen = AppScreen.Settings }
+                )
+            }
         }
+    }
+
+    // Search overlay on top of everything
+    if (isSearchActive) {
+        SearchOverlay(
+            query = searchQuery,
+            onQueryChange = { viewModel.setSearchQuery(it) },
+            onClose = { viewModel.setSearchActive(false) },
+            channelResults = searchResults,
+            vodResults = searchVodResults,
+            onChannelClick = {
+                viewModel.selectChannel(it)
+                viewModel.play(it)
+                viewModel.setSearchActive(false)
+                currentScreen = AppScreen.LiveTV
+            },
+            onVodClick = { viewModel.setSearchActive(false) },
+            onToggleFavorite = { viewModel.toggleFavorite(it) }
+        )
     }
 
     // Add playlist dialog
@@ -265,10 +339,24 @@ fun MainScreen(viewModel: MainViewModel) {
 }
 
 @Composable
+private fun BackToHomeButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(VinColors.Overlay)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(Icons.Filled.Home, "Home", tint = VinColors.TextPrimary,
+            modifier = Modifier.size(20.dp))
+    }
+}
+
+@Composable
 private fun WelcomeScreen(
     onAddM3uUrl: () -> Unit,
-    onAddXtream: () -> Unit,
-    onSkip: () -> Unit
+    onAddXtream: () -> Unit
 ) {
     var showAnimation by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(100); showAnimation = true }
@@ -294,7 +382,7 @@ private fun WelcomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(32.dp)
             ) {
-                // Logo / Brand
+                // Logo
                 Box(
                     modifier = Modifier
                         .size(100.dp)
@@ -317,12 +405,12 @@ private fun WelcomeScreen(
                 Text("Premium IPTV Experience",
                     fontSize = 15.sp, color = VinColors.TextSecondary)
                 Spacer(Modifier.height(6.dp))
-                Text("Watch live TV, movies, series & more",
+                Text("Add your playlist to get started",
                     fontSize = 13.sp, color = VinColors.TextTertiary)
 
                 Spacer(Modifier.height(40.dp))
 
-                // Add playlist buttons
+                // Add M3U button
                 Button(
                     onClick = onAddM3uUrl,
                     modifier = Modifier.fillMaxWidth(0.5f).height(52.dp),
@@ -336,6 +424,7 @@ private fun WelcomeScreen(
 
                 Spacer(Modifier.height(12.dp))
 
+                // Xtream button
                 OutlinedButton(
                     onClick = onAddXtream,
                     modifier = Modifier.fillMaxWidth(0.5f).height(52.dp),
@@ -348,11 +437,11 @@ private fun WelcomeScreen(
                     Text("Xtream Codes", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(24.dp))
 
-                TextButton(onClick = onSkip) {
-                    Text("Try Demo Version", color = VinColors.TextSecondary, fontSize = 13.sp)
-                }
+                // Help text
+                Text("Enter your IPTV provider details",
+                    color = VinColors.TextTertiary, fontSize = 12.sp)
             }
         }
     }
@@ -714,5 +803,3 @@ private fun AddPlaylistDialog(
         }
     )
 }
-
-
