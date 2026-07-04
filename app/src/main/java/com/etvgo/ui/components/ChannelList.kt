@@ -1,6 +1,9 @@
 package com.etvgo.ui.components
 
 import androidx.compose.animation.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -55,7 +57,6 @@ fun ChannelList(
                     .fillMaxWidth()
                     .background(bgColor)
                     .clickable { onChannelSelected(channel) }
-                    .focusable()
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -102,7 +103,7 @@ fun ChannelList(
                         text = channel.name,
                         color = if (isSelected) TextPrimary else TextSecondary,
                         fontSize = 14.sp,
-                        fontWeight = if (isSelected) FontWeight.Semibold else FontWeight.Normal,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -122,15 +123,14 @@ fun ChannelList(
                         .size(32.dp)
                         .clip(CircleShape)
                         .clickable { onFavoriteToggle(channel) }
-                        .focusable()
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     androidx.compose.material3.Icon(
                         imageVector = if (channel.isFavorite)
-                            androidx.compose.material.icons.Icons.Filled.Star
+                            Icons.Filled.Star
                         else
-                            androidx.compose.material.icons.Icons.Outlined.Star,
+                            Icons.Outlined.StarOutline,
                         contentDescription = if (channel.isFavorite) "Remove favorite" else "Add favorite",
                         tint = if (channel.isFavorite) FavoriteGold else TextTertiary,
                         modifier = Modifier.size(18.dp)

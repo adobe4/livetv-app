@@ -5,8 +5,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -14,9 +12,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -61,24 +62,18 @@ fun SettingsDialog(
                     .clickable(enabled = false) { }
                     .padding(24.dp)
             ) {
-                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Add Playlist",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
+                    Text("Add Playlist", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                     Box(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
                             .clickable(onClick = onDismiss)
-                            .focusable()
+                            
                             .padding(4.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -88,7 +83,6 @@ fun SettingsDialog(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Tabs
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -104,7 +98,7 @@ fun SettingsDialog(
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(if (isSelected) AccentBlue else Color.Transparent)
                                 .clickable { selectedTab = tab }
-                                .focusable()
+                                
                                 .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -124,44 +118,36 @@ fun SettingsDialog(
 
                 Spacer(Modifier.height(20.dp))
 
-                // Content based on tab
                 when (selectedTab) {
                     ImportTab.M3U_URL -> {
                         Text("M3U Playlist URL", color = TextSecondary, fontSize = 13.sp)
                         Spacer(Modifier.height(6.dp))
-                        BasicTextField(
+                        OutlinedTextField(
                             value = m3uUrl,
                             onValueChange = { m3uUrl = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(DarkBackground)
-                                .border(1.dp, Separator, RoundedCornerShape(8.dp))
-                                .padding(12.dp),
-                            textStyle = androidx.compose.ui.text.TextStyle(
-                                color = TextPrimary, fontSize = 15.sp
-                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = TextStyle(color = TextPrimary, fontSize = 15.sp),
                             singleLine = true,
-                            decorationBox = { inner ->
-                                if (m3uUrl.isEmpty()) {
-                                    Text("https://example.com/playlist.m3u", color = TextTertiary, fontSize = 15.sp)
-                                }
-                                inner()
-                            },
+                            placeholder = { Text("https://example.com/playlist.m3u", color = TextTertiary, fontSize = 15.sp) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
-                            keyboardActions = KeyboardActions(onGo = { onM3uUrlSubmit(m3uUrl) })
+                            keyboardActions = KeyboardActions(onGo = { onM3uUrlSubmit(m3uUrl) }),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AccentBlue,
+                                unfocusedBorderColor = Separator,
+                                cursorColor = AccentBlue,
+                                focusedContainerColor = DarkBackground,
+                                unfocusedContainerColor = DarkBackground
+                            )
                         )
                         Spacer(Modifier.height(16.dp))
                         Button(
                             onClick = { onM3uUrlSubmit(m3uUrl) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp),
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                             shape = RoundedCornerShape(10.dp),
                             enabled = m3uUrl.isNotBlank()
                         ) {
-                            Text("Load Playlist", fontWeight = FontWeight.Semibold)
+                            Text("Load Playlist", fontWeight = FontWeight.SemiBold)
                         }
                     }
 
@@ -170,9 +156,7 @@ fun SettingsDialog(
                         Spacer(Modifier.height(16.dp))
                         Button(
                             onClick = onFileUpload,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp),
+                            modifier = Modifier.fillMaxWidth().height(100.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = DarkBackground),
                             shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, Separator)
@@ -188,54 +172,59 @@ fun SettingsDialog(
                     ImportTab.XTREAM -> {
                         Text("Server URL", color = TextSecondary, fontSize = 13.sp)
                         Spacer(Modifier.height(6.dp))
-                        BasicTextField(
+                        OutlinedTextField(
                             value = xtreamServer,
                             onValueChange = { xtreamServer = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(DarkBackground)
-                                .border(1.dp, Separator, RoundedCornerShape(8.dp))
-                                .padding(12.dp),
-                            textStyle = androidx.compose.ui.text.TextStyle(color = TextPrimary, fontSize = 15.sp),
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = TextStyle(color = TextPrimary, fontSize = 15.sp),
                             singleLine = true,
-                            decorationBox = { inner ->
-                                if (xtreamServer.isEmpty()) Text("http://your-server.com:8080", color = TextTertiary, fontSize = 15.sp)
-                                inner()
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+                            placeholder = { Text("http://your-server.com:8080", color = TextTertiary, fontSize = 15.sp) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AccentBlue,
+                                unfocusedBorderColor = Separator,
+                                cursorColor = AccentBlue,
+                                focusedContainerColor = DarkBackground,
+                                unfocusedContainerColor = DarkBackground
+                            )
                         )
                         Spacer(Modifier.height(12.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("Username", color = TextSecondary, fontSize = 13.sp)
                                 Spacer(Modifier.height(6.dp))
-                                BasicTextField(
+                                OutlinedTextField(
                                     value = xtreamUser,
                                     onValueChange = { xtreamUser = it },
-                                    modifier = Modifier.fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(DarkBackground)
-                                        .border(1.dp, Separator, RoundedCornerShape(8.dp))
-                                        .padding(12.dp),
-                                    textStyle = androidx.compose.ui.text.TextStyle(color = TextPrimary, fontSize = 15.sp),
-                                    singleLine = true
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textStyle = TextStyle(color = TextPrimary, fontSize = 15.sp),
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AccentBlue,
+                                        unfocusedBorderColor = Separator,
+                                        cursorColor = AccentBlue,
+                                        focusedContainerColor = DarkBackground,
+                                        unfocusedContainerColor = DarkBackground
+                                    )
                                 )
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("Password", color = TextSecondary, fontSize = 13.sp)
                                 Spacer(Modifier.height(6.dp))
-                                BasicTextField(
+                                OutlinedTextField(
                                     value = xtreamPass,
                                     onValueChange = { xtreamPass = it },
-                                    modifier = Modifier.fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(DarkBackground)
-                                        .border(1.dp, Separator, RoundedCornerShape(8.dp))
-                                        .padding(12.dp),
-                                    textStyle = androidx.compose.ui.text.TextStyle(color = TextPrimary, fontSize = 15.sp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textStyle = TextStyle(color = TextPrimary, fontSize = 15.sp),
                                     singleLine = true,
-                                    visualTransformation = PasswordVisualTransformation()
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AccentBlue,
+                                        unfocusedBorderColor = Separator,
+                                        cursorColor = AccentBlue,
+                                        focusedContainerColor = DarkBackground,
+                                        unfocusedContainerColor = DarkBackground
+                                    )
                                 )
                             }
                         }
@@ -247,7 +236,7 @@ fun SettingsDialog(
                             shape = RoundedCornerShape(10.dp),
                             enabled = xtreamServer.isNotBlank() && xtreamUser.isNotBlank() && xtreamPass.isNotBlank()
                         ) {
-                            Text("Connect", fontWeight = FontWeight.Semibold)
+                            Text("Connect", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }

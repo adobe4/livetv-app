@@ -17,7 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusable
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -26,12 +26,13 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.media3.ui.compose.AspectRatioFrameLayout
 import com.etvgo.data.model.Category
+import com.etvgo.player.ETVPlayerView
 import com.etvgo.data.model.Channel
 import com.etvgo.data.model.EPGProgram
 import com.etvgo.ui.components.*
 import com.etvgo.ui.theme.*
+import com.etvgo.viewmodel.MainUiState
 import com.etvgo.viewmodel.MainViewModel
 
 @Composable
@@ -207,7 +208,7 @@ private fun WelcomeScreen(
             ) {
                 Icon(Icons.Filled.Link, "URL", modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Add M3U URL", fontSize = 16.sp, fontWeight = FontWeight.Semibold)
+                Text("Add M3U URL", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(Modifier.height(12.dp))
@@ -308,7 +309,7 @@ private fun ChannelListPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Channels", fontSize = 13.sp, fontWeight = FontWeight.Semibold, color = TextSecondary)
+            Text("Channels", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
             Text("${channels.size}", fontSize = 12.sp, color = TextTertiary)
         }
 
@@ -356,7 +357,7 @@ private fun RightPanel(
             if (currentChannel != null) {
                 // The ExoPlayer composable will be placed here natively
                 // For now, show the player info overlay
-                AndroidView(
+                AndroidView<android.view.View>(
                     factory = { ctx ->
                         com.etvgo.player.ETVPlayerView(ctx).apply {
                             layoutParams = android.view.ViewGroup.LayoutParams(

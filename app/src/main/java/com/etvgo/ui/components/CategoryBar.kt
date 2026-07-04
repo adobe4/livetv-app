@@ -3,7 +3,6 @@ package com.etvgo.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -43,14 +42,14 @@ fun CategoryBar(
                     .clip(RoundedCornerShape(20.dp))
                     .background(bgColor)
                     .clickable { onCategorySelected(category.name) }
-                    .focusable()
+                    
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 androidx.compose.material3.Text(
                     text = category.name,
                     color = if (isSelected) TextPrimary else TextSecondary,
                     fontSize = 13.sp,
-                    fontWeight = if (isSelected) FontWeight.Semibold else FontWeight.Medium,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                     maxLines = 1
                 )
             }

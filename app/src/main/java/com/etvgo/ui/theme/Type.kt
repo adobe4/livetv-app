@@ -18,15 +18,15 @@ val Typography = Typography(
         letterSpacing = (-0.3).sp
     ),
     headlineLarge = TextStyle(
-        fontWeight = FontWeight.Semibold,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 20.sp
     ),
     headlineMedium = TextStyle(
-        fontWeight = FontWeight.Semibold,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 17.sp
     ),
     titleLarge = TextStyle(
-        fontWeight = FontWeight.Semibold,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 15.sp
     ),
     bodyLarge = TextStyle(

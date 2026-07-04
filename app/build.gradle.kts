@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -20,9 +21,7 @@ android {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
+    // No composeOptions needed with Kotlin 2.0+ compose plugin
 
     buildTypes {
         release {
@@ -42,7 +41,6 @@ android {
 }
 
 dependencies {
-    // Compose BOM
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")
@@ -70,7 +68,7 @@ dependencies {
     // Coil for images
     implementation("io.coil-kt:coil-compose:2.6.0")
 
-    // OkHttp for networking
+    // OkHttp
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Coroutines
@@ -78,6 +76,4 @@ dependencies {
 
     // Core
     implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.tv:tv-foundation:1.0.0")
-    implementation("androidx.tv:tv-material:1.0.0")
 }

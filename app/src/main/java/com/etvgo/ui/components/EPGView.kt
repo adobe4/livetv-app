@@ -32,7 +32,7 @@ fun EPGView(
             text = "EPG Guide",
             color = TextPrimary,
             fontSize = 13.sp,
-            fontWeight = FontWeight.Semibold,
+            fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 6.dp)
         )
 

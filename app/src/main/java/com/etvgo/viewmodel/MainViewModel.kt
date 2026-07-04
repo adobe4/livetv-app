@@ -166,7 +166,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun togglePlayPause() {
-        _state.update { it.copy(isPlaying = !it.value.isPlaying) }
+        _state.update { it.copy(isPlaying = !it.isPlaying) }
     }
 
     fun nextChannel() {
