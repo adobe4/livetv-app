@@ -17,6 +17,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val hasPlaylists: StateFlow<Boolean> = repository.playlists.map { it.isNotEmpty() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    // Loading and error states
+    val isLoading: StateFlow<Boolean> = repository.isLoading
+    val error: StateFlow<String?> = repository.error
+    val lastRefreshTime: StateFlow<Long> = repository.lastRefreshTime
+
     // Channel state
     val channels: StateFlow<List<Channel>> = repository.channels
     val categories: StateFlow<List<Category>> = repository.categories
@@ -58,10 +63,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // EPG
     val epgData: StateFlow<Map<String, List<EPGProgram>>> = repository.epgData
 
-    // VOD
-    private val _vodCategories = MutableStateFlow<List<VODCategory>>(emptyList())
-    val vodCategories: StateFlow<List<VODCategory>> = _vodCategories.asStateFlow()
-
     // Search
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -73,37 +74,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         channels, _searchQuery
     ) { chs, query ->
         if (query.isBlank()) emptyList()
-        else {
-            val q = query.lowercase()
-            chs.filter {
-                it.name.lowercase().contains(q) ||
-                it.category.lowercase().contains(q)
-            }.take(30)
-        }
+        else repository.searchChannels(query)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val searchVodResults: StateFlow<List<VODItem>> = combine(
-        repository.vodMovies, repository.vodSeries, _searchQuery
-    ) { movies, series, query ->
-        if (query.isBlank()) emptyList()
-        else {
-            val q = query.lowercase()
-            (movies + series).filter {
-                it.title.lowercase().contains(q) ||
-                it.plot.lowercase().contains(q)
-            }.take(20)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    init {
-        refreshVOD()
+    override fun onCleared() {
+        super.onCleared()
     }
 
     // --- Playlist Management ---
     fun addPlaylist(name: String, type: PlaylistType, url: String = "",
                     serverUrl: String = "", username: String = "", password: String = "") {
         val source = PlaylistSource(
-            name = name.ifEmpty { type.name },
+            name = name.ifBlank {
+                when (type) {
+                    PlaylistType.M3U_URL -> "My M3U Playlist"
+                    PlaylistType.XTREAM -> "My Xtream"
+                    else -> "My Playlist"
+                }
+            },
             type = type,
             url = url,
             serverUrl = serverUrl,
@@ -111,11 +99,46 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             password = password
         )
         repository.addPlaylist(source)
-        refreshVOD()
+
+        // Start fetching data
+        viewModelScope.launch {
+            when (type) {
+                PlaylistType.M3U_URL -> {
+                    if (url.isNotBlank()) {
+                        repository.fetchAndParseM3U(url)
+                    }
+                }
+                PlaylistType.XTREAM -> {
+                    if (serverUrl.isNotBlank() && username.isNotBlank()) {
+                        repository.fetchXtreamData(serverUrl, username, password)
+                    }
+                }
+                else -> {}
+            }
+        }
     }
 
     fun removePlaylist(id: String) = repository.removePlaylist(id)
-    fun setActivePlaylist(id: String) = repository.setActivePlaylist(id)
+    fun setActivePlaylist(id: String) {
+        repository.setActivePlaylist(id)
+        // Refresh channels for this playlist
+        viewModelScope.launch { repository.refreshPlaylist() }
+    }
+
+    fun refreshCurrentPlaylist() {
+        viewModelScope.launch { repository.refreshPlaylist() }
+    }
+
+    fun clearError() = repository.clearError()
+
+    val totalChannels: StateFlow<Int> = channels.map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val activePlaylistName: StateFlow<String> = combine(
+        playlists, activePlaylistId
+    ) { pls, activeId ->
+        pls.find { it.id == activeId }?.name ?: "No playlist"
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "No playlist")
 
     // --- Channel Selection ---
     fun selectCategory(index: Int) {
@@ -131,8 +154,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Player ---
     fun play(channel: Channel) {
-        _selectedChannel.value = channel
-        _isPlaying.value = true
+        if (_selectedChannel.value?.id != channel.id || !_isPlaying.value) {
+            _selectedChannel.value = channel
+            _isPlaying.value = true
+        }
     }
 
     fun togglePlayPause() {
@@ -155,18 +180,5 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setSearchActive(active: Boolean) {
         _isSearchActive.value = active
         if (!active) _searchQuery.value = ""
-    }
-
-    // --- VOD ---
-    fun refreshVOD() {
-        viewModelScope.launch {
-            _vodCategories.value = repository.getVODCategories()
-        }
-    }
-
-    fun toggleFavoriteVod(vodId: String) = repository.toggleFavoriteVod(vodId)
-
-    fun searchVod(query: String): List<VODItem> {
-        return repository.searchVod(query)
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.viniptv.ui.theme.VinColors
@@ -31,210 +32,279 @@ data class HomeTile(
 
 @Composable
 fun HomeScreen(
+    playlistName: String,
+    channelCount: Int,
+    isLoading: Boolean,
+    lastRefreshTime: Long,
     onLiveTv: () -> Unit,
-    onVodMovies: () -> Unit,
-    onVodSeries: () -> Unit,
+    onVod: () -> Unit,
     onSports: () -> Unit,
     onEpg: () -> Unit,
     onSettings: () -> Unit,
+    onRefresh: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tiles = listOf(
-        HomeTile("live", "Live TV", "Watch live channels", Icons.Filled.LiveTv,
-            listOf(Color(0xFF007AFF), Color(0xFF0055CC)), "HD"),
-        HomeTile("movies", "Movies", "On-demand films", Icons.Filled.Movie,
-            listOf(Color(0xFFFF2D55), Color(0xFFCC0044)),
-            if (java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) > 0) "NEW" else null),
-        HomeTile("series", "Series", "TV shows & seasons", Icons.Filled.Tv,
-            listOf(Color(0xFF34C759), Color(0xFF009933))),
-        HomeTile("sports", "Sports", "Live sports events", Icons.Filled.FitnessCenter,
-            listOf(Color(0xFFFF9500), Color(0xFFCC6600))),
-        HomeTile("epg", "EPG Guide", "TV schedule", Icons.Filled.Schedule,
-            listOf(Color(0xFF9B59B6), Color(0xFF6C3483))),
-        HomeTile("settings", "Settings", "Manage playlists & more", Icons.Filled.Settings,
-            listOf(Color(0xFF6E6E73), Color(0xFF3A3A3C)))
-    )
-
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(VinColors.Background)
     ) {
-        // Top Bar
+        // Top bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Vin IPTV",
-                    color = VinColors.TextPrimary,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold)
-                Text("Premium IPTV Experience",
-                    color = VinColors.TextSecondary,
-                    fontSize = 13.sp)
-            }
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(VinColors.Accent, VinColors.Accent.copy(alpha = 0.6f))
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("V", color = Color.White,
-                    fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        // Category Grid
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Row 1: Live TV, Movies, Series
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                tiles.take(3).forEach { tile ->
-                    HomeTileCard(
-                        tile = tile,
-                        onClick = when (tile.id) {
-                            "live" -> onLiveTv
-                            "movies" -> onVodMovies
-                            "series" -> onVodSeries
-                            else -> { {} }
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(VinColors.Accent, VinColors.Accent.copy(alpha = 0.6f))
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("V", color = Color.White,
+                            fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Column {
+                        Text("Vin IPTV",
+                            color = VinColors.TextPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold)
+                        if (isLoading) {
+                            Text("Loading channels...",
+                                color = VinColors.Accent, fontSize = 11.sp)
+                        } else if (channelCount > 0) {
+                            Text("$channelCount channels • $playlistName",
+                                color = VinColors.TextTertiary, fontSize = 11.sp,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        } else {
+                            Text(playlistName,
+                                color = VinColors.TextTertiary, fontSize = 11.sp)
+                        }
+                    }
                 }
             }
 
-            // Row 2: Sports, EPG, Settings
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                tiles.drop(3).forEach { tile ->
-                    HomeTileCard(
-                        tile = tile,
-                        onClick = when (tile.id) {
-                            "sports" -> onSports
-                            "epg" -> onEpg
-                            "settings" -> onSettings
-                            else -> { {} }
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
+            // Refresh and settings buttons
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (channelCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(VinColors.SurfaceLight)
+                            .clickable(onClick = onRefresh),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = VinColors.Accent,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Filled.Refresh, "Refresh",
+                                tint = VinColors.TextSecondary, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(VinColors.SurfaceLight)
+                        .clickable(onClick = onSettings),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.Settings, "Settings",
+                        tint = VinColors.TextSecondary, modifier = Modifier.size(20.dp))
                 }
             }
         }
 
-        // Bottom bar with quick actions
-        Spacer(Modifier.height(16.dp))
+        // Main content - horizontal scroll of category cards
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .weight(1f)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            QuickAction(Icons.Filled.Favorite, "Favorites") { }
-            QuickAction(Icons.Filled.History, "Recent") { }
-            QuickAction(Icons.Filled.Search, "Search") { }
-            QuickAction(Icons.Filled.Add, "Add Playlist") { }
+            // Main categories column (2 big cards)
+            Column(
+                modifier = Modifier.weight(1.5f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Row 1: Live TV + Movies
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CategoryCard(
+                        title = "Live TV",
+                        subtitle = if (channelCount > 0) "$channelCount channels" else "Browse channels",
+                        icon = Icons.Filled.LiveTv,
+                        gradient = listOf(Color(0xFF007AFF), Color(0xFF0055CC)),
+                        badge = if (channelCount > 0) "$channelCount" else null,
+                        onClick = onLiveTv,
+                        modifier = Modifier.weight(1f)
+                    )
+                    CategoryCard(
+                        title = "VOD",
+                        subtitle = if (channelCount > 0) "Movies & Series" else "Coming soon",
+                        icon = Icons.Filled.Movie,
+                        gradient = listOf(Color(0xFFFF2D55), Color(0xFFCC0044)),
+                        badge = null,
+                        onClick = onVod,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                // Row 2: Sports + EPG
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CategoryCard(
+                        title = "Sports",
+                        subtitle = "Live sports events",
+                        icon = Icons.Filled.FitnessCenter,
+                        gradient = listOf(Color(0xFFFF9500), Color(0xFFCC6600)),
+                        onClick = onSports,
+                        modifier = Modifier.weight(1f)
+                    )
+                    CategoryCard(
+                        title = "EPG Guide",
+                        subtitle = "TV schedule",
+                        icon = Icons.Filled.Schedule,
+                        gradient = listOf(Color(0xFF9B59B6), Color(0xFF6C3483)),
+                        onClick = onEpg,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        // Bottom status bar
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(VinColors.Surface)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (channelCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(VinColors.Success)
+                    )
+                    Text("Connected", color = VinColors.TextSecondary, fontSize = 12.sp)
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(VinColors.Warning)
+                    )
+                    Text("No channels loaded", color = VinColors.TextTertiary, fontSize = 12.sp)
+                }
+                if (lastRefreshTime > 0) {
+                    Text("•", color = VinColors.TextTertiary, fontSize = 12.sp)
+                    Text(formatRefreshTime(lastRefreshTime),
+                        color = VinColors.TextTertiary, fontSize = 11.sp)
+                }
+            }
+
+            if (channelCount == 0 && !isLoading) {
+                TextButton(onClick = onSettings) {
+                    Icon(Icons.Filled.Add, null, modifier = Modifier.size(14.dp),
+                        tint = VinColors.Accent)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Add Playlist", color = VinColors.Accent, fontSize = 12.sp)
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun HomeTileCard(
-    tile: HomeTile,
+private fun CategoryCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    gradient: List<Color>,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    badge: String? = null
 ) {
     Box(
         modifier = modifier
-            .aspectRatio(1f)
+            .fillMaxWidth()
+            .fillMaxHeight()
             .clip(RoundedCornerShape(16.dp))
             .background(
                 Brush.linearGradient(
-                    tile.gradient,
+                    listOf(gradient[0], gradient.getOrElse(1) { gradient[0] }),
                     start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                    end = androidx.compose.ui.geometry.Offset(300f, 300f)
+                    end = androidx.compose.ui.geometry.Offset(600f, 600f)
                 )
             )
             .clickable(onClick = onClick)
-            .padding(16.dp)
+            .padding(20.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Icon at top
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(tile.icon, tile.title,
-                    tint = Color.White, modifier = Modifier.size(24.dp))
-            }
-
-            // Text at bottom
-            Column {
-                if (tile.badge != null) {
+            // Icon with badge
+            Box {
+                Icon(icon, title, tint = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier.size(32.dp))
+                if (badge != null) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.White.copy(alpha = 0.3f))
+                            .align(Alignment.TopEnd)
+                            .offset(x = 4.dp, y = (-4).dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.White.copy(alpha = 0.25f))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
-                        Text(tile.badge, color = Color.White,
-                            fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text(badge, color = Color.White,
+                            fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
-                    Spacer(Modifier.height(4.dp))
                 }
-                Text(tile.title, color = Color.White,
-                    fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                Text(tile.subtitle, color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 11.sp)
+            }
+
+            // Title and subtitle
+            Column {
+                Text(title, color = Color.White,
+                    fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(subtitle, color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 12.sp)
             }
         }
     }
 }
 
-@Composable
-private fun QuickAction(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(VinColors.SurfaceLight),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, label, tint = VinColors.Accent, modifier = Modifier.size(20.dp))
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(label, color = VinColors.TextTertiary, fontSize = 10.sp)
+private fun formatRefreshTime(millis: Long): String {
+    val diff = System.currentTimeMillis() - millis
+    val seconds = diff / 1000
+    val minutes = seconds / 60
+    return when {
+        seconds < 60 -> "Just now"
+        minutes < 60 -> "${minutes}m ago"
+        else -> "${minutes / 60}h ago"
     }
 }

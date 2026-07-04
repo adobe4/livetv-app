@@ -49,6 +49,7 @@ fun LiveTVScreen(
     onPlayPause: () -> Unit,
     onFullScreen: () -> Unit,
     onSearchClick: () -> Unit,
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Row(
