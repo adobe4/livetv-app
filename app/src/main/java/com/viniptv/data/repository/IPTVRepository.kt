@@ -158,42 +158,28 @@ class IPTVRepository {
 
     suspend fun fetchXtreamData(serverUrl: String, username: String, password: String): Boolean {
         _isLoading.value = true
-        _error.value = null
         try {
-            // Xtream API endpoints
             val baseUrl = "${serverUrl.trimEnd('/')}/player_api.php"
             val liveUrl = "$baseUrl?username=$username&password=$password&action=live_streams"
-
             val content = fetchUrl(liveUrl)
-
-            // Parse xtream JSON response for channels
             val parser = com.viniptv.data.parser.XtreamParser()
             val parsedChannels = withContext(Dispatchers.Default) {
                 parser.parseLiveStreams(content)
             }
-
             if (parsedChannels.isEmpty()) {
-                _error.value = "No channels found. Check your Xtream credentials"
                 _isLoading.value = false
                 return false
             }
-
             _channels.value = parsedChannels
             val catMap = parsedChannels.groupBy { it.category }
             _categories.value = catMap.entries.mapIndexed { index, (name, chs) ->
-                Category(
-                    id = "cat_$index",
-                    name = name,
-                    type = CategoryType.LIVE,
-                    channelCount = chs.size,
-                    isSelected = index == 0
-                )
+                Category(id = "cat_$index", name = name, type = CategoryType.LIVE,
+                    channelCount = chs.size, isSelected = index == 0)
             }
             _lastRefreshTime.value = System.currentTimeMillis()
             _isLoading.value = false
             return true
         } catch (e: Exception) {
-            _error.value = "Xtream failed: ${e.message ?: "Unknown error"}"
             _isLoading.value = false
             return false
         }
@@ -235,16 +221,17 @@ class IPTVRepository {
         _favoriteVodIds.value = current
     }
 
-    private suspend fun fetchUrl(url: String): String {
+    private suspend fun fetchUrl(url: String): String = withContext(Dispatchers.IO) {
         val request = Request.Builder()
             .url(url)
             .header("User-Agent", "VLC/3.0.21 LibVLC/3.0.21")
             .header("Accept", "*/*")
+            .header("Connection", "close")
             .build()
         val response = httpClient.newCall(request).execute()
         if (!response.isSuccessful) {
             throw Exception("HTTP ${response.code}")
         }
-        return response.body?.string() ?: throw Exception("Empty response")
+        response.body?.string() ?: throw Exception("Empty response")
     }
 }

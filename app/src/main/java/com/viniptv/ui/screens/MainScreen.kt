@@ -216,7 +216,9 @@ fun MainScreen(viewModel: MainViewModel) {
                     },
                     onEpg = { currentScreen = AppScreen.EPG },
                     onSettings = { currentScreen = AppScreen.Settings },
-                    onRefresh = { viewModel.refreshCurrentPlaylist() }
+                    onRefresh = { viewModel.refreshCurrentPlaylist() },
+                    onSearch = { viewModel.setSearchActive(true) },
+                    onFavorites = { }
                 )
             }
 
