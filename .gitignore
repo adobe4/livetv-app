@@ -4,8 +4,6 @@ tv/build/
 build/
 .gradle/
 local.properties
-*.apk
-*.apk.*
 *.dex
 *.class
 *.jar
