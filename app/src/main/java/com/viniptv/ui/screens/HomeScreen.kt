@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,26 +49,26 @@ fun HomeScreen(
     onFavorites: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showContent by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { delay(80); showContent = true }
+    var loaded by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { delay(60); loaded = true }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(VinColors.Background)
     ) {
-        // === TOP BAR ===
+        // ===== HEADER =====
         AnimatedVisibility(
-            visible = showContent,
-            enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { -it }
+            visible = loaded,
+            enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { -it }
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 6.dp),
+                    .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Logo + name + status
+                // App icon + name
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -77,38 +76,38 @@ fun HomeScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Brush.linearGradient(
-                                listOf(VinColors.Accent, VinColors.Accent.copy(alpha = 0.5f))
-                            )),
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(
+                                Brush.linearGradient(listOf(VinColors.Accent, Color(0xFF0044AA)))
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("V", color = Color.White,
-                            fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                        Text("V", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
                     Column {
                         Text("Vin IPTV", color = VinColors.TextPrimary,
                             fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                        Row(verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
                             Box(
-                                modifier = Modifier
-                                    .size(5.dp)
-                                    .clip(CircleShape)
+                                modifier = Modifier.size(5.dp).clip(CircleShape)
                                     .background(
-                                        if (channelCount > 0) VinColors.Success
-                                        else if (isLoading) VinColors.Accent
-                                        else VinColors.Warning
+                                        when { isLoading -> VinColors.Accent
+                                            channelCount > 0 -> VinColors.Success
+                                            else -> VinColors.Warning }
                                     )
                             )
                             Text(
                                 when {
-                                    isLoading -> "Loading channels..."
-                                    channelCount > 0 -> "$channelCount channels"
-                                    else -> "No channels"
+                                    isLoading -> "Loading..."
+                                    channelCount > 0 -> "${channelCount}ch • $playlistName"
+                                    else -> "No channels loaded"
                                 },
-                                color = VinColors.TextTertiary, fontSize = 10.sp
+                                color = VinColors.TextTertiary, fontSize = 10.sp,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -116,132 +115,144 @@ fun HomeScreen(
 
                 // Actions
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    // Refresh
                     Box(
-                        modifier = Modifier.size(32.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                        modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp))
                             .background(VinColors.SurfaceLight)
                             .clickable(onClick = onRefresh),
                         contentAlignment = Alignment.Center
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(15.dp),
+                            CircularProgressIndicator(modifier = Modifier.size(14.dp),
                                 color = VinColors.Accent, strokeWidth = 2.dp)
                         } else {
                             Icon(Icons.Filled.Refresh, "Refresh",
-                                tint = VinColors.TextSecondary, modifier = Modifier.size(17.dp))
+                                tint = VinColors.TextSecondary, modifier = Modifier.size(16.dp))
                         }
                     }
+                    // Settings
                     Box(
-                        modifier = Modifier.size(32.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                        modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp))
                             .background(VinColors.SurfaceLight)
                             .clickable(onClick = onSettings),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Filled.Settings, "Settings",
-                            tint = VinColors.TextSecondary, modifier = Modifier.size(17.dp))
+                            tint = VinColors.TextSecondary, modifier = Modifier.size(16.dp))
                     }
                 }
             }
         }
 
-        // === CATEGORY CARDS (2x2 Grid) ===
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        // ===== CATEGORY CARDS =====
+        Box(
+            modifier = Modifier.fillMaxWidth().weight(1f)
         ) {
-            // Row 1
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                TileCard(
-                    tile = HomeTile("live", "Live TV",
-                        if (channelCount > 0) "$channelCount channels" else "Browse channels",
-                        Icons.Filled.LiveTv,
-                        listOf(Color(0xFF007AFF), Color(0xFF0044AA)),
-                        if (channelCount > 0) "$channelCount" else null),
-                    delayMs = 100, showContent = showContent,
-                    onClick = onLiveTv,
-                    modifier = Modifier.weight(1f)
-                )
-                TileCard(
-                    tile = HomeTile("vod", "VOD", "Movies & Series",
-                        Icons.Filled.Movie, listOf(Color(0xFFFF2D55), Color(0xFFAA0022))),
-                    delayMs = 180, showContent = showContent,
-                    onClick = onVod,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            // Row 2
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                TileCard(
-                    tile = HomeTile("sports", "Sports", "Live events",
-                        Icons.Filled.FitnessCenter, listOf(Color(0xFFFF9500), Color(0xFFCC6600))),
-                    delayMs = 260, showContent = showContent,
-                    onClick = onSports,
-                    modifier = Modifier.weight(1f)
-                )
-                TileCard(
-                    tile = HomeTile("epg", "EPG Guide", "TV Schedule",
-                        Icons.Filled.Schedule, listOf(Color(0xFF9B59B6), Color(0xFF6C3483))),
-                    delayMs = 340, showContent = showContent,
-                    onClick = onEpg,
-                    modifier = Modifier.weight(1f)
-                )
+            if (channelCount == 0 && !isLoading) {
+                // Empty state
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(20.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Filled.WifiOff, null,
+                        tint = VinColors.TextTertiary, modifier = Modifier.size(48.dp))
+                    Spacer(Modifier.height(12.dp))
+                    Text("Could not load channels", color = VinColors.TextSecondary, fontSize = 17.sp)
+                    Text("Check your playlist URL and tap Refresh",
+                        color = VinColors.TextTertiary, fontSize = 13.sp)
+                    Spacer(Modifier.height(20.dp))
+                    Button(
+                        onClick = onRefresh,
+                        colors = ButtonDefaults.buttonColors(containerColor = VinColors.Accent),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Retry", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            } else {
+                // Cards grid
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Row 1
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        TileCard(
+                            "live", "Live TV",
+                            if (channelCount > 0) "$channelCount channels" else "Watch now",
+                            Icons.Filled.LiveTv,
+                            listOf(Color(0xFF007AFF), Color(0xFF0044AA)),
+                            if (channelCount > 0) "$channelCount" else null,
+                            delayMs = 100, loaded = loaded,
+                            onClick = onLiveTv,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TileCard(
+                            "vod", "Movies & Series",
+                            "On-demand content", Icons.Filled.PlayCircle,
+                            listOf(Color(0xFFFF2D55), Color(0xFFAA0022)),
+                            null,
+                            delayMs = 180, loaded = loaded,
+                            onClick = onVod,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    // Row 2
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        TileCard(
+                            "sports", "Sports",
+                            "Live events", Icons.Filled.EmojiEvents,
+                            listOf(Color(0xFFFF9500), Color(0xFFCC6600)),
+                            null,
+                            delayMs = 260, loaded = loaded,
+                            onClick = onSports,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TileCard(
+                            "epg", "TV Guide",
+                            "Program schedule", Icons.Filled.DateRange,
+                            listOf(Color(0xFF34C759), Color(0xFF009933)),
+                            null,
+                            delayMs = 340, loaded = loaded,
+                            onClick = onEpg,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
         }
 
-        // === BOTTOM STATUS BAR ===
+        // ===== DOCK (bottom bar) =====
         AnimatedVisibility(
-            visible = showContent,
+            visible = loaded,
             enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { it }
         ) {
-            Column {
-                // Refresh hint if no channels
-                if (channelCount == 0 && !isLoading) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(VinColors.AccentDim)
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Filled.Info, null,
-                                tint = VinColors.Accent, modifier = Modifier.size(14.dp))
-                            Text("Could not load channels. Tap Refresh to retry.",
-                                color = VinColors.Accent, fontSize = 11.sp)
-                        }
-                        TextButton(onClick = onRefresh,
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) {
-                            Text("Retry", color = VinColors.Accent, fontSize = 11.sp)
-                        }
-                    }
-                }
-
-                // Quick actions
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = VinColors.Surface,
+                shadowElevation = 12.dp
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(VinColors.Surface)
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                        .padding(horizontal = 24.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    QuickActionBtn(Icons.Filled.Star, "Favorites", onFavorites)
-                    QuickActionBtn(Icons.Filled.Search, "Search", onSearch)
-                    QuickActionBtn(Icons.Filled.Add, "Add Playlist", onSettings)
+                    DockItem(Icons.Filled.Star, "Favorites", onFavorites)
+                    DockItem(Icons.Filled.Search, "Search", onSearch)
+                    DockItem(Icons.Filled.Add, "Add", onSettings)
                     if (lastRefreshTime > 0) {
-                        QuickActionBtn(Icons.Filled.History, formatRefreshTime(lastRefreshTime)) { }
+                        DockItem(Icons.Filled.AccessTime, formatRefreshTime(lastRefreshTime)) { }
                     }
                 }
             }
@@ -251,34 +262,28 @@ fun HomeScreen(
 
 @Composable
 private fun TileCard(
-    tile: HomeTile,
-    delayMs: Int,
-    showContent: Boolean,
+    id: String, title: String, subtitle: String,
+    icon: ImageVector, gradient: List<Color>, badge: String?,
+    delayMs: Int, loaded: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(showContent) {
-        if (showContent) {
-            delay(delayMs.toLong())
-            visible = true
-        }
-    }
+    LaunchedEffect(loaded) { if (loaded) { delay(delayMs.toLong()); visible = true } }
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.9f)
+        enter = fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.92f)
     ) {
         Box(
             modifier = modifier
-                .fillMaxWidth()
-                .fillMaxHeight()
-                .clip(RoundedCornerShape(14.dp))
+                .fillMaxWidth().fillMaxHeight()
+                .clip(RoundedCornerShape(16.dp))
                 .background(
                     Brush.linearGradient(
-                        tile.gradient,
+                        gradient,
                         start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                        end = androidx.compose.ui.geometry.Offset(400f, 400f)
+                        end = androidx.compose.ui.geometry.Offset(500f, 500f)
                     )
                 )
                 .clickable(
@@ -286,61 +291,57 @@ private fun TileCard(
                     indication = null,
                     onClick = onClick
                 )
-                .padding(18.dp)
+                .padding(20.dp)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Icon(tile.icon, tile.title,
-                        tint = Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(26.dp))
-                    if (tile.badge != null) {
+                    Icon(icon, title, tint = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.size(30.dp))
+                    if (badge != null) {
                         Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(5.dp))
+                            modifier = Modifier.clip(RoundedCornerShape(6.dp))
                                 .background(Color.White.copy(alpha = 0.2f))
-                                .padding(horizontal = 5.dp, vertical = 1.dp)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            Text(tile.badge, color = Color.White,
-                                fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text(badge, color = Color.White,
+                                fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
-                Column {
-                    Text(tile.title, color = Color.White,
-                        fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                    Text(tile.subtitle, color = Color.White.copy(alpha = 0.6f),
-                        fontSize = 11.sp)
-                }
+                Spacer(Modifier.weight(1f))
+                Text(title, color = Color.White, fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold)
+                Text(subtitle, color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
 }
 
 @Composable
-private fun QuickActionBtn(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit
+private fun DockItem(
+    icon: ImageVector, label: String, onClick: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
+            .padding(horizontal = 12.dp, vertical = 4.dp)
     ) {
         Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
+            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp))
                 .background(VinColors.Background),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, label, tint = VinColors.Accent, modifier = Modifier.size(18.dp))
+            Icon(icon, label, tint = VinColors.Accent, modifier = Modifier.size(16.dp))
         }
         Text(label, color = VinColors.TextTertiary, fontSize = 9.sp)
     }
@@ -351,8 +352,8 @@ private fun formatRefreshTime(millis: Long): String {
     val sec = diff / 1000
     val min = sec / 60
     return when {
-        sec < 60 -> "Just now"
-        min < 60 -> "${min}m ago"
-        else -> "${min / 60}h ago"
+        sec < 60 -> "Now"
+        min < 60 -> "${min}m"
+        else -> "${min / 60}h"
     }
 }

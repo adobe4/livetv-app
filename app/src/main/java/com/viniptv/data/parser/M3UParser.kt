@@ -16,35 +16,48 @@ object M3UParser {
             val l = line!!.trim()
             if (l.startsWith("#EXTINF:")) {
                 currentExtInf = l
-            } else if (l.isNotEmpty() && !l.startsWith("#")) {
+            } else if (l.isNotEmpty() && !l.startsWith("#") && l.startsWith("http")) {
                 val url = l
                 if (currentExtInf != null) {
                     channels.add(parseExtInf(currentExtInf, url, channelNumber))
                     channelNumber++
                 }
                 currentExtInf = null
+            } else if (l.isNotEmpty() && !l.startsWith("#") && currentExtInf != null) {
+                // Non-http URL - still valid for some IPTV providers
+                val url = l
+                channels.add(parseExtInf(currentExtInf, url, channelNumber))
+                channelNumber++
+                currentExtInf = null
             }
         }
         return channels
     }
 
-    fun parseFromUrl(url: String, content: String): List<Channel> {
-        return parse(content)
-    }
-
     private fun parseExtInf(extInf: String, url: String, number: Int): Channel {
-        val name = extractAttribute(extInf, "tvg-name")
-            ?: extractAttribute(extInf, "tvg-id")
-            ?: extInf.substringAfterLast(",").trim()
-            .takeIf { it.isNotEmpty() }
-            ?: "Channel $number"
-
+        // Extract attributes
+        val tvgName = extractAttribute(extInf, "tvg-name")
+        val tvgId = extractAttribute(extInf, "tvg-id")
         val logo = extractAttribute(extInf, "tvg-logo") ?: ""
         val groupTitle = extractAttribute(extInf, "group-title") ?: "Uncategorized"
         val epgId = extractAttribute(extInf, "tvg-id") ?: ""
-        val epgName = extractAttribute(extInf, "tvg-name") ?: name
-        val tvgShift = extractAttribute(extInf, "tvg-shift")?.toIntOrNull() ?: 0
-        val radio = extInf.contains("radio=", ignoreCase = true)
+
+        // Get the display name - text after the last comma in EXTINF
+        val displayName = extInf.substringAfterLast(",").trim()
+
+        // Determine the best channel name
+        // Priority: tvg-name > display name (if it's not just a number) > tvg-id > "Channel N"
+        val name = when {
+            !tvgName.isNullOrBlank() -> cleanName(tvgName)
+            displayName.isNotBlank() && !displayName.all { it.isDigit() } -> cleanName(displayName)
+            !tvgId.isNullOrBlank() -> cleanName(tvgId)
+            else -> "Channel $number"
+        }
+
+        // Determine EPG channel ID
+        val epgChannelId = epgId.ifBlank {
+            tvgName?.takeIf { it.isNotBlank() } ?: displayName
+        }
 
         return Channel(
             id = "ch_$number",
@@ -53,15 +66,26 @@ object M3UParser {
             logoUrl = logo,
             category = groupTitle.ifEmpty { "Uncategorized" },
             url = url,
-            epgChannelId = epgId,
-            epgChannelName = epgName,
-            isAdult = extInf.contains("+18", ignoreCase = true) || extInf.contains("adult", ignoreCase = true),
-            hasArchive = tvgShift > 0
+            epgChannelId = epgChannelId,
+            epgChannelName = tvgName ?: name,
+            isAdult = extInf.contains("+18", ignoreCase = true) || extInf.contains("adult", ignoreCase = true)
         )
     }
 
+    /**
+     * Clean channel name - remove extra whitespace, quotes, etc.
+     */
+    private fun cleanName(name: String): String {
+        return name
+            .trim()
+            .trim('"')
+            .trim('\'')
+            .replace(Regex("\\s+"), " ")  // collapse multiple spaces
+            .ifBlank { "Unknown" }
+    }
+
     private fun extractAttribute(line: String, attr: String): String? {
-        val regex = """$attr="([^"]*)"""".toRegex()
+        val regex = """$attr\s*=\s*"([^"]*)"""".toRegex()
         return regex.find(line)?.groupValues?.getOrNull(1)?.takeIf { it.isNotEmpty() }
     }
 }

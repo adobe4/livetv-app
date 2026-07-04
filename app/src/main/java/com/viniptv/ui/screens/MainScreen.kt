@@ -186,6 +186,7 @@ fun MainScreen(viewModel: MainViewModel) {
                 FullScreenPlayerScreen(
                     channel = screen.channel,
                     isPlaying = isPlaying,
+                    playerManager = playerManager,
                     channels = filteredChannels,
                     favoriteChannelIds = favoriteChannelIds,
                     epgData = epgData[screen.channel.epgChannelId] ?: emptyList(),
