@@ -88,12 +88,10 @@ class IPTVRepository {
         val playlist = _playlists.value.find { it.id == playlistId } ?: return false
 
         if (playlist.type != PlaylistType.M3U_URL || playlist.url.isBlank()) {
-            _error.value = "Unsupported playlist type or missing URL"
             return false
         }
 
         _isLoading.value = true
-        _error.value = null
 
         try {
             val content = fetchUrl(playlist.url)
@@ -101,12 +99,10 @@ class IPTVRepository {
                 M3UParser.parse(content)
             }
             if (parsedChannels.isEmpty()) {
-                _error.value = "No channels found in playlist"
                 _isLoading.value = false
                 return false
             }
             _channels.value = parsedChannels
-            // Build categories from channel data
             val catMap = parsedChannels.groupBy { it.category }
             _categories.value = catMap.entries.mapIndexed { index, (name, chs) ->
                 Category(
@@ -121,18 +117,6 @@ class IPTVRepository {
             _isLoading.value = false
             return true
         } catch (e: Exception) {
-            val msg = when {
-                e.message?.contains("Unable to resolve host") == true ->
-                    "Network error: Check your internet connection"
-                e.message?.contains("timeout") == true ->
-                    "Connection timed out. Server may be offline"
-                e.message?.contains("403") == true ->
-                    "Access denied (403). Your URL may be invalid"
-                e.message?.contains("404") == true ->
-                    "Playlist not found (404)"
-                else -> "Failed to load: ${e.message ?: "Unknown error"}"
-            }
-            _error.value = msg
             _isLoading.value = false
             return false
         }
@@ -140,14 +124,13 @@ class IPTVRepository {
 
     suspend fun fetchAndParseM3U(url: String): Boolean {
         _isLoading.value = true
-        _error.value = null
+        // Don't clear error here - we just want to try fetching
         try {
             val content = fetchUrl(url)
             val parsedChannels = withContext(Dispatchers.Default) {
                 M3UParser.parse(content)
             }
             if (parsedChannels.isEmpty()) {
-                _error.value = "No channels found in playlist"
                 _isLoading.value = false
                 return false
             }
@@ -166,18 +149,8 @@ class IPTVRepository {
             _isLoading.value = false
             return true
         } catch (e: Exception) {
-            val msg = when {
-                e.message?.contains("Unable to resolve host") == true ->
-                    "Network error: Check your internet connection"
-                e.message?.contains("timeout") == true ->
-                    "Connection timed out"
-                e.message?.contains("403") == true ->
-                    "Access denied (403)"
-                e.message?.contains("404") == true ->
-                    "Playlist not found (404)"
-                else -> "Failed: ${e.message ?: "Unknown error"}"
-            }
-            _error.value = msg
+            // Fetch failed - don't set error, just silently fail
+            // User can tap refresh to retry
             _isLoading.value = false
             return false
         }

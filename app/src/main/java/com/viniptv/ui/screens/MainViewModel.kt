@@ -100,12 +100,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
         repository.addPlaylist(source)
 
-        // Start fetching data
+        // Try to fetch channels (silent fail if URL is invalid)
         viewModelScope.launch {
             when (type) {
                 PlaylistType.M3U_URL -> {
                     if (url.isNotBlank()) {
-                        repository.fetchAndParseM3U(url)
+                        val success = repository.fetchAndParseM3U(url)
+                        if (!success && channels.value.isEmpty()) {
+                            // Silently failed - playlist was added, channels will be empty
+                        }
                     }
                 }
                 PlaylistType.XTREAM -> {

@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,6 +97,19 @@ fun MainScreen(viewModel: MainViewModel) {
         error?.let {
             snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Long)
             viewModel.clearError()
+        }
+    }
+
+    // === SYSTEM BACK BUTTON HANDLING ===
+    BackHandler(enabled = currentScreen !is AppScreen.Home) {
+        when (val screen = currentScreen) {
+            is AppScreen.FullPlayer -> currentScreen = AppScreen.LiveTV
+            is AppScreen.LiveTV -> currentScreen = AppScreen.Home
+            is AppScreen.VOD -> currentScreen = AppScreen.Home
+            is AppScreen.EPG -> currentScreen = AppScreen.Home
+            is AppScreen.Settings -> currentScreen = AppScreen.Home
+            is AppScreen.ManagePlaylists -> currentScreen = AppScreen.Settings
+            else -> {}
         }
     }
 
