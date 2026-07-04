@@ -12,6 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "ETVGo"
+rootProject.name = "VinIPTV"
 include(":app")
-include(":tv")

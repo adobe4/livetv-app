@@ -1,22 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ETV Go</string>
-    <string name="search">Search channels...</string>
-    <string name="favorites">Favorites</string>
-    <string name="all_channels">All Channels</string>
+    <string name="app_name">Vin IPTV</string>
+    <string name="live_tv">Live TV</string>
+    <string name="vod">Movies &amp; Series</string>
+    <string name="epg">Program Guide</string>
     <string name="settings">Settings</string>
+    <string name="search">Search...</string>
+    <string name="favorites">My Favorites</string>
+    <string name="trending">Trending</string>
+    <string name="popular">Popular</string>
+    <string name="new_releases">New Releases</string>
+    <string name="continue_watching">Continue Watching</string>
+    <string name="no_channels">No channels available</string>
+    <string name="no_vod">No movies or series found</string>
+    <string name="no_epg">No program information available</string>
+    <string name="loading">Loading...</string>
     <string name="add_playlist">Add Playlist</string>
-    <string name="m3u_url">M3U URL</string>
-    <string name="xtream_codes">Xtream Codes</string>
-    <string name="upload_file">Upload File</string>
-    <string name="no_channels">No channels found</string>
-    <string name="no_epg">No EPG available</string>
-    <string name="now_playing">Now Playing</string>
-    <string name="categories">Categories</string>
-    <string name="fullscreen">Fullscreen</string>
-    <string name="exit_fullscreen">Exit Fullscreen</string>
-    <string name="channel_up">Channel Up</string>
-    <string name="channel_down">Channel Down</string>
-    <string name="add_favorite">Add to Favorites</string>
-    <string name="remove_favorite">Remove from Favorites</string>
+    <string name="my_playlists">My Playlists</string>
+    <string name="parental_control">Parental Control</string>
+    <string name="player_settings">Player Settings</string>
+    <string name="buffer_size">Buffer Size</string>
+    <string name="hardware_decoding">Hardware Decoding</string>
+    <string name="aspect_ratio">Aspect Ratio</string>
+    <string name="about">About</string>
+    <string name="version">Version 2.0.0</string>
 </resources>

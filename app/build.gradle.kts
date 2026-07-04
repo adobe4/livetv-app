@@ -5,23 +5,21 @@ plugins {
 }
 
 android {
-    namespace = "com.etvgo"
+    namespace = "com.viniptv"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.etvgo"
+        applicationId = "com.viniptv"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "2.0.0"
         multiDexEnabled = true
     }
 
     buildFeatures {
         compose = true
     }
-
-    // No composeOptions needed with Kotlin 2.0+ compose plugin
 
     buildTypes {
         release {
@@ -57,13 +55,10 @@ dependencies {
     // Media3 (ExoPlayer)
     implementation("androidx.media3:media3-exoplayer:1.3.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-rtsp:1.3.1")
     implementation("androidx.media3:media3-ui:1.3.1")
     implementation("androidx.media3:media3-session:1.3.1")
-
-    // Room
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    annotationProcessor("androidx.room:room-compiler:2.6.1")
 
     // Coil for images
     implementation("io.coil-kt:coil-compose:2.6.0")

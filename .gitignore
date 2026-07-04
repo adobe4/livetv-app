@@ -4,6 +4,8 @@ tv/build/
 build/
 .gradle/
 local.properties
+*.apk
+*.apk.*
 *.dex
 *.class
 *.jar
@@ -15,5 +17,3 @@ Thumbs.db
 __pycache__/
 *.tmp
 .kotlin/
-# ETVGo.apk is tracked - ready to download
-*.apk
