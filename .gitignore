@@ -16,3 +16,4 @@ __pycache__/
 *.tmp
 .kotlin/
 # ETVGo.apk is tracked - ready to download
+*.apk
