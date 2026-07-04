@@ -89,6 +89,50 @@ fun MainScreen(viewModel: MainViewModel) {
         }
     }
 
+    // Add playlist dialog (must be BEFORE early returns to be reachable)
+    if (showAddPlaylistDialog) {
+        AddPlaylistDialog(
+            importMode = importMode,
+            playlistName = playlistName,
+            m3uUrl = m3uUrl,
+            xtreamServer = xtreamServer,
+            xtreamUser = xtreamUser,
+            xtreamPass = xtreamPass,
+            onPlaylistNameChange = { playlistName = it },
+            onModeChange = { importMode = it },
+            onM3uUrlChange = { m3uUrl = it },
+            onXtreamServerChange = { xtreamServer = it },
+            onXtreamUserChange = { xtreamUser = it },
+            onXtreamPassChange = { xtreamPass = it },
+            onSubmit = {
+                if (importMode == 0 && m3uUrl.isNotBlank()) {
+                    viewModel.addPlaylist(
+                        name = playlistName.ifBlank { "My M3U Playlist" },
+                        type = PlaylistType.M3U_URL,
+                        url = m3uUrl
+                    )
+                    showAddPlaylistDialog = false
+                    m3uUrl = ""
+                    playlistName = ""
+                } else if (importMode == 1 && xtreamServer.isNotBlank() && xtreamUser.isNotBlank()) {
+                    viewModel.addPlaylist(
+                        name = playlistName.ifBlank { "My Xtream" },
+                        type = PlaylistType.XTREAM,
+                        serverUrl = xtreamServer,
+                        username = xtreamUser,
+                        password = xtreamPass
+                    )
+                    showAddPlaylistDialog = false
+                    xtreamServer = ""
+                    xtreamUser = ""
+                    xtreamPass = ""
+                    playlistName = ""
+                }
+            },
+            onDismiss = { showAddPlaylistDialog = false }
+        )
+    }
+
     // Welcome screen - MUST add playlist, no skip
     if (!hasPlaylists) {
         WelcomeScreen(
@@ -293,49 +337,7 @@ fun MainScreen(viewModel: MainViewModel) {
         )
     }
 
-    // Add playlist dialog
-    if (showAddPlaylistDialog) {
-        AddPlaylistDialog(
-            importMode = importMode,
-            playlistName = playlistName,
-            m3uUrl = m3uUrl,
-            xtreamServer = xtreamServer,
-            xtreamUser = xtreamUser,
-            xtreamPass = xtreamPass,
-            onPlaylistNameChange = { playlistName = it },
-            onModeChange = { importMode = it },
-            onM3uUrlChange = { m3uUrl = it },
-            onXtreamServerChange = { xtreamServer = it },
-            onXtreamUserChange = { xtreamUser = it },
-            onXtreamPassChange = { xtreamPass = it },
-            onSubmit = {
-                if (importMode == 0 && m3uUrl.isNotBlank()) {
-                    viewModel.addPlaylist(
-                        name = playlistName.ifBlank { "My M3U Playlist" },
-                        type = PlaylistType.M3U_URL,
-                        url = m3uUrl
-                    )
-                    showAddPlaylistDialog = false
-                    m3uUrl = ""
-                    playlistName = ""
-                } else if (importMode == 1 && xtreamServer.isNotBlank() && xtreamUser.isNotBlank()) {
-                    viewModel.addPlaylist(
-                        name = playlistName.ifBlank { "My Xtream" },
-                        type = PlaylistType.XTREAM,
-                        serverUrl = xtreamServer,
-                        username = xtreamUser,
-                        password = xtreamPass
-                    )
-                    showAddPlaylistDialog = false
-                    xtreamServer = ""
-                    xtreamUser = ""
-                    xtreamPass = ""
-                    playlistName = ""
-                }
-            },
-            onDismiss = { showAddPlaylistDialog = false }
-        )
-    }
+
 }
 
 @Composable
